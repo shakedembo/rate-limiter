@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"log"
 	"os"
 	"os/signal"
@@ -23,8 +22,9 @@ func main() {
 	logger.Print("Initializing...")
 	defer logger.Printf("Bye Bye :)")
 
-	hash := fnv.New32a()
-	counter := utils.NewConcurrentHashCounter(hash, func(url string) []byte { return []byte(url) }, logger)
+	convertToBytesFunc := func(url string) []byte { return []byte(url) }
+	hash := utils.NewFnv32aHashProvider(convertToBytesFunc, logger)
+	counter := utils.NewConcurrentHashCounter(hash, logger)
 	ttlQ := utils.NewConcurrentConditionalQueue[*models.UrlTimestamp]()
 	serviceConfig := config.NewRateLimiterServiceConfig(logger)
 	rateLimiterService := internal.NewRateLimiterService(serviceConfig, &counter, &ttlQ, logger)
